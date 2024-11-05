@@ -109,9 +109,13 @@ public class VideoCapture: NSObject {
     }
     do {
       try captureDevice.lockForConfiguration()
+        
+      let exposureDuration = CMTimeMake(value: 1, timescale: 3000) //Belichtungszeit von 1/3000 sek
+      captureDevice.setExposureModeCustom(duration: exposureDuration, iso: 3072, completionHandler: nil)
+
       captureDevice.focusMode = .continuousAutoFocus
       captureDevice.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
-      captureDevice.exposureMode = .continuousAutoExposure
+      //captureDevice.exposureMode = .continuousAutoExposure
       captureDevice.unlockForConfiguration()
     } catch {
       print("Unable to configure the capture device.")
