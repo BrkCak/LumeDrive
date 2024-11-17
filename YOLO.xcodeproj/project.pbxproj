@@ -20,6 +20,9 @@
 		6381D21C2B7817C200ABA4E8 /* yolov8n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 6381D2172B7817C200ABA4E8 /* yolov8n.mlpackage */; };
 		63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44D22186177008AE681 /* LaunchScreen.storyboard */; };
 		63CF37202514455300E2DEA1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44F22186177008AE681 /* Main.storyboard */; };
+		67724BB52CE4F420001AF004 /* DifferentialTaillightClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */; };
+		67BEDC652CDE16520018B15B /* ImageHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BEDC642CDE16520018B15B /* ImageHandler.swift */; };
+		67DDD7D32CDBF36E00C5A4E7 /* StaticTaillightDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */; };
 		8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +42,9 @@
 		6381D2162B7817C200ABA4E8 /* yolov8m.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolov8m.mlpackage; sourceTree = "<group>"; };
 		6381D2172B7817C200ABA4E8 /* yolov8n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolov8n.mlpackage; sourceTree = "<group>"; };
 		63B8B0A821E62A890026FBC3 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DifferentialTaillightClassifier.swift; sourceTree = "<group>"; };
+		67BEDC642CDE16520018B15B /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
+		67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticTaillightDetector.swift; sourceTree = "<group>"; };
 		7BCB411721C3096100BFC4D0 /* YOLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YOLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 		8EDAAA4507D2D23D7FAB827F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -67,6 +73,7 @@
 		636EFC9B21E62DD300DE43BC /* YOLO */ = {
 			isa = PBXGroup;
 			children = (
+				67DDD7D22CDBF36E00C5A4E7 /* V2V-Occ-Extension */,
 				63A946D8271800E20001C3ED /* Models */,
 				636166E72514438D0054FA7E /* Utilities */,
 				636EFCA721E62DD300DE43BC /* AppDelegate.swift */,
@@ -91,6 +98,16 @@
 				6381D2142B7817C200ABA4E8 /* yolov8x.mlpackage */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		67DDD7D22CDBF36E00C5A4E7 /* V2V-Occ-Extension */ = {
+			isa = PBXGroup;
+			children = (
+				67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */,
+				67BEDC642CDE16520018B15B /* ImageHandler.swift */,
+				67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */,
+			);
+			path = "V2V-Occ-Extension";
 			sourceTree = "<group>";
 		};
 		7BCB410E21C3096100BFC4D0 = {
@@ -138,8 +155,9 @@
 		7BCB410F21C3096100BFC4D0 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1010;
-				LastUpgradeCheck = 1520;
+				LastUpgradeCheck = 1610;
 				ORGANIZATIONNAME = Ultralytics;
 				TargetAttributes = {
 					7BCB411621C3096100BFC4D0 = {
@@ -183,8 +201,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		63F890A422A1723300072C38 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
+			buildActionMask = 8;
 			files = (
 			);
 			inputFileListPaths = (
@@ -195,7 +212,7 @@
 			);
 			outputPaths = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbuildNumber=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"${PROJECT_DIR}/${INFOPLIST_FILE}\")\nbuildNumber=$(($buildNumber + 1))\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber\" \"${PROJECT_DIR}/${INFOPLIST_FILE}\"\n";
 		};
@@ -208,12 +225,15 @@
 			files = (
 				6381D21B2B7817C200ABA4E8 /* yolov8m.mlpackage in Sources */,
 				6381D21C2B7817C200ABA4E8 /* yolov8n.mlpackage in Sources */,
+				67DDD7D32CDBF36E00C5A4E7 /* StaticTaillightDetector.swift in Sources */,
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
 				6381D2182B7817C200ABA4E8 /* yolov8l.mlpackage in Sources */,
+				67724BB52CE4F420001AF004 /* DifferentialTaillightClassifier.swift in Sources */,
 				6381D21A2B7817C200ABA4E8 /* yolov8s.mlpackage in Sources */,
 				6381D2192B7817C200ABA4E8 /* yolov8x.mlpackage in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
+				67BEDC652CDE16520018B15B /* ImageHandler.swift in Sources */,
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,
 				8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */,
 			);
@@ -260,6 +280,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -322,6 +343,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
