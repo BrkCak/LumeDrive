@@ -222,6 +222,9 @@ class ViewController: UIViewController {
     var boundingBoxViews = [BoundingBoxView]()
     var boundingBoxViewTaillightLeft: BoundingBoxView?
     var boundingBoxViewTaillightRight: BoundingBoxView?
+    var taillightLeftViews: [BoundingBoxView] = []
+    var taillightRightViews: [BoundingBoxView] = []
+    let analyzer = BERAnalyzer()
     var carBoundingBoxViews: [BoundingBoxView] = []
     var colors: [String: UIColor] = [:]
     
@@ -386,167 +389,184 @@ class ViewController: UIViewController {
     
     func show(predictions: [VNRecognizedObjectObservation]) {
         carBoundingBoxViews.removeAll()
-        let width = videoPreview.bounds.width  // 375 pix
-        let height = videoPreview.bounds.height  // 812 pix
-        var str = ""
-        
-        // ratio = videoPreview AR divided by sessionPreset AR
-        var ratio: CGFloat = 1.0
-        if videoCapture.captureSession.sessionPreset == .photo {
-            ratio = (height / width) / (4.0 / 3.0)  // .photo
-        } else {
-            ratio = (height / width) / (16.0 / 9.0)  // .hd4K3840x2160, .hd1920x1080, .hd1280x720 etc.
-        }
-        
-        // date
+        taillightLeftViews.forEach { $0.hide() }
+        taillightRightViews.forEach { $0.hide() }
+        taillightLeftViews.removeAll()
+        taillightRightViews.removeAll()
+
+        let width = videoPreview.bounds.width
+        let height = videoPreview.bounds.height
+
+        let ratio: CGFloat = {
+            let presetAR = (videoCapture.captureSession.sessionPreset == .photo) ? (4.0 / 3.0) : (16.0 / 9.0)
+            return (height / width) / presetAR
+        }()
+
         let date = Date()
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: date)
-        let minutes = calendar.component(.minute, from: date)
-        let seconds = calendar.component(.second, from: date)
-        let nanoseconds = calendar.component(.nanosecond, from: date)
-        let sec_day =
-        Double(hour) * 3600.0 + Double(minutes) * 60.0 + Double(seconds) + Double(nanoseconds) / 1E9  // seconds in the day
-        
-        self.labelSlider.text =
-        String(predictions.count) + " items (max " + String(Int(slider.value)) + ")"
-        for i in 0..<boundingBoxViews.count {
-            if i < predictions.count && i < Int(slider.value) {
-                let prediction = predictions[i]
-                
-                var rect = prediction.boundingBox  // normalized xywh, origin lower left
-                switch UIDevice.current.orientation {
-                case .portraitUpsideDown:
-                    rect = CGRect(
-                        x: 1.0 - rect.origin.x - rect.width,
-                        y: 1.0 - rect.origin.y - rect.height,
-                        width: rect.width,
-                        height: rect.height)
-                case .landscapeLeft:
-                    rect = CGRect(
-                        x: rect.origin.x,
-                        y: rect.origin.y,
-                        width: rect.width,
-                        height: rect.height)
-                case .landscapeRight:
-                    rect = CGRect(
-                        x: rect.origin.x,
-                        y: rect.origin.y,
-                        width: rect.width,
-                        height: rect.height)
-                case .unknown:
-                    print("The device orientation is unknown, the predictions may be affected")
-                    fallthrough
-                default: break
-                }
-                
-                if ratio >= 1 {  // iPhone ratio = 1.218
-                    let offset = (1 - ratio) * (0.5 - rect.minX)
-                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
-                    rect = rect.applying(transform)
-                    rect.size.width *= ratio
-                } else {  // iPad ratio = 0.75
-                    let offset = (ratio - 1) * (0.5 - rect.maxY)
-                    let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
-                    rect = rect.applying(transform)
-                    ratio = (height / width) / (3.0 / 4.0)
-                    rect.size.height /= ratio
-                }
-                
-                // Scale normalized to pixels [375, 812] [width, height]
-                rect = VNImageRectForNormalizedRect(rect, Int(width), Int(height))
-                
-                // The labels array is a list of VNClassificationObservation objects,
-                // with the highest scoring class first in the list.
-                let bestClass = prediction.labels[0].identifier
-                let confidence = prediction.labels[0].confidence
-                if (bestClass == "car") {
-                    let label = String(format: "%@ %.1f", bestClass, confidence * 100)
-                    let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
-                    boundingBoxViews[i].show(
-                        frame: rect,
-                        label: label,
-                        color: UIColor.systemGreen,
-                        alpha: alpha
-                    )
-                    /*
-                     let detectTaillight = StaticTaillightDetector()
-                     let (tll, tlr) = detectTaillight.detectTaillights(frame: rect)
-                     
-                     if boundingBoxViewTaillightLeft == nil {
-                     boundingBoxViewTaillightLeft = BoundingBoxView()
-                     boundingBoxViewTaillightLeft?.addToLayer(self.view.layer)
-                     }
-                     
-                     if boundingBoxViewTaillightRight == nil {
-                     boundingBoxViewTaillightRight = BoundingBoxView()
-                     boundingBoxViewTaillightRight?.addToLayer(self.view.layer)
-                     }
-                     
-                     boundingBoxViewTaillightLeft?.show(frame: tll, label: "TaillightLeft", color: UIColor.blue, alpha: 0.8)
-                     boundingBoxViewTaillightRight?.show(frame: tlr, label: "TaillightRight", color: UIColor.red, alpha: 0.8)
-                     */
-                    
-                    carBoundingBoxViews.append(boundingBoxViews[i])
-                    for carBoundingBoxView in carBoundingBoxViews {
-                        let detectTaillight = StaticTaillightDetector()
-                        let (tll, tlr) = detectTaillight.detectTaillights(frame: carBoundingBoxView.currentFrame)
-                        
-                        boundingBoxViewTaillightLeft = BoundingBoxView()
-                        boundingBoxViewTaillightLeft?.addToLayer(self.view.layer)
-                        boundingBoxViewTaillightLeft?.show(frame: tll, label: "TaillightLeft", color: UIColor.blue, alpha: 0.8)
-                        
-                        boundingBoxViewTaillightRight = BoundingBoxView()
-                        boundingBoxViewTaillightRight?.addToLayer(self.view.layer)
-                        boundingBoxViewTaillightRight?.show(frame: tlr, label: "TaillightRight", color: UIColor.red, alpha: 0.8)
-                    }
-                    print(carBoundingBoxViews.count)
-                } else {
-                    boundingBoxViews[i].hide()
-                }
-                
-                if developerMode {
-                    // Write
-                    if save_detections {
-                        str += String(
-                            format: "%.3f %.3f %.3f %@ %.2f %.1f %.1f %.1f %.1f\n",
-                            sec_day, freeSpace(), UIDevice.current.batteryLevel, bestClass, confidence,
-                            rect.origin.x, rect.origin.y, rect.size.width, rect.size.height)
-                    }
-                    
-                    // Action trigger upon detection
-                    // if false {
-                    //     if (bestClass == "car") {  // "cell phone", "car", "person"
-                    //         self.takePhoto(nil)
-                    //         // self.pauseButton(nil)
-                    //         sleep(2)
-                    //     }
-                    // }
-                }
+        let secDay = Double(calendar.component(.hour, from: date)) * 3600.0 +
+                     Double(calendar.component(.minute, from: date)) * 60.0 +
+                     Double(calendar.component(.second, from: date)) +
+                     Double(calendar.component(.nanosecond, from: date)) / 1E9
+
+        labelSlider.text = "\(predictions.count) items (max \(Int(slider.value)))"
+
+        for i in 0..<boundingBoxViews.count where i < predictions.count && i < Int(slider.value) {
+            let prediction = predictions[i]
+            var rect = prediction.boundingBox
+
+            rect = adjustBoundingBox(rect: rect)
+
+            rect = transformBoundingBox(rect: rect, width: width, height: height, ratio: ratio)
+
+            let bestClass = prediction.labels[0].identifier
+            let confidence = prediction.labels[0].confidence
+            
+            if bestClass == "car" && confidence > 0.6 {
+                let label = String(format: "%@ %.1f", bestClass, confidence * 100)
+                let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
+
+                boundingBoxViews[i].show(frame: rect, label: label, color: UIColor.systemGreen, alpha: alpha)
+                carBoundingBoxViews.append(boundingBoxViews[i])
+
+                detectAndShowTaillights(for: carBoundingBoxViews)
             } else {
                 boundingBoxViews[i].hide()
             }
-        }
-        
-        // Write
-        if developerMode {
-            if save_detections {
-                saveText(text: str, file: "detections.txt")  // Write stats for each detection
+            /*
+            //Test
+            let label = String(format: "%@ %.1f", bestClass, confidence * 100)
+            let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
+            boundingBoxViews[i].show(frame: rect, label: label, color: UIColor.systemGreen, alpha: alpha)
+            carBoundingBoxViews.append(boundingBoxViews[i])
+            detectAndShowTaillights(for: carBoundingBoxViews)
+             //Test
+            */
+            if developerMode, save_detections {
+                let detectionStr = String(format: "%.3f %.3f %.3f %@ %.2f %.1f %.1f %.1f %.1f\n",
+                                          secDay, freeSpace(), UIDevice.current.batteryLevel,
+                                          bestClass, confidence, rect.origin.x, rect.origin.y,
+                                          rect.size.width, rect.size.height)
+                saveText(text: detectionStr, file: "detections.txt")
             }
-            if save_frames {
-                str = String(
-                    format: "%.3f %.3f %.3f %.3f %.1f %.1f %.1f\n",
-                    sec_day, freeSpace(), memoryUsage(), UIDevice.current.batteryLevel,
-                    self.t1 * 1000, self.t2 * 1000, 1 / self.t4)
-                saveText(text: str, file: "frames.txt")  // Write stats for each image
-            }
         }
-        
-        // Debug
-        // print(str)
-        // print(UIDevice.current.identifierForVendor!)
-        // saveImage()
+
+        if developerMode, save_frames {
+            let frameStats = String(format: "%.3f %.3f %.3f %.3f %.1f %.1f %.1f\n",
+                                    secDay, freeSpace(), memoryUsage(), UIDevice.current.batteryLevel,
+                                    t1 * 1000, t2 * 1000, 1 / t4)
+            saveText(text: frameStats, file: "frames.txt")
+        }
     }
+
+    func adjustBoundingBox(rect: CGRect) -> CGRect {
+        switch UIDevice.current.orientation {
+        case .portraitUpsideDown:
+            return CGRect(x: 1.0 - rect.origin.x - rect.width,
+                          y: 1.0 - rect.origin.y - rect.height,
+                          width: rect.width, height: rect.height)
+        case .landscapeLeft, .landscapeRight:
+            return rect
+        case .unknown:
+            print("Die Geräteausrichtung ist unbekannt, die Vorhersagen könnten beeinträchtigt sein")
+            fallthrough
+        default:
+            return rect
+        }
+    }
+
+    func transformBoundingBox(rect: CGRect, width: CGFloat, height: CGFloat, ratio: CGFloat) -> CGRect {
+        var transformedRect = rect
+
+        if ratio >= 1 {
+            let offset = (1 - ratio) * (0.5 - rect.minX)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: offset, y: -1)
+            transformedRect = rect.applying(transform)
+            transformedRect.size.width *= ratio
+        } else {
+            let offset = (ratio - 1) * (0.5 - rect.maxY)
+            let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: offset - 1)
+            transformedRect = rect.applying(transform)
+            transformedRect.size.height /= ratio
+        }
+
+        return VNImageRectForNormalizedRect(transformedRect, Int(width), Int(height))
+    }
+    
+    var lastTaillightLeftImage: UIImage?
+    var lastTaillightRightImage: UIImage?
+    var buffer: [Int] = []
+    func detectAndShowTaillights(for carViews: [BoundingBoxView]) {
+        let differentialClassifier = DifferentialTaillightClassifier()
+        
+        for carBoundingBoxView in carViews {
+            let detectTaillight = StaticTaillightDetector()
+            let (tll, tlr) = detectTaillight.detectTaillights(frame: carBoundingBoxView.currentFrame)
+            
+            let taillightLeftView = BoundingBoxView()
+            taillightLeftView.addToLayer(self.view.layer)
+            taillightLeftView.show(frame: tll, label: "LeftTaillight", color: UIColor.blue, alpha: 0.8)
+            taillightLeftViews.append(taillightLeftView)
+            
+            let taillightRightView = BoundingBoxView()
+            taillightRightView.addToLayer(self.view.layer)
+            taillightRightView.show(frame: tlr, label: "RightTaillight", color: UIColor.red, alpha: 0.8)
+            taillightRightViews.append(taillightRightView)
+            
+            guard let currentFrameImage = captureCurrentFrameAsImage() else { continue }
+            
+            let taillightLeftImage = cropImage(to: tll, from: currentFrameImage)
+            let taillightRightImage = cropImage(to: tlr, from: currentFrameImage)
+            
+            //Differential
+            let isLeftActive = differentialClassifier.classifyTaillight(
+                currentImage: taillightLeftImage,
+                lastImage: lastTaillightLeftImage
+            )
+            if(isLeftActive) {
+                taillightLeftView.show(frame: tll, label: "LeftTaillight", color: UIColor.purple, alpha: 0.8)
+                buffer.append(1)
+            } else {
+                buffer.append(0)
+            }
+            
+            let isRightActive = differentialClassifier.classifyTaillight(
+                currentImage: taillightRightImage,
+                lastImage: lastTaillightRightImage
+            )
+            if(isRightActive) {
+                taillightRightView.show(frame: tlr, label: "RightTaillight", color: UIColor.purple, alpha: 0.8)
+                buffer.append(1)
+            } else {
+                buffer.append(0)
+            }
+            //Differential
+            
+            lastTaillightLeftImage = taillightLeftImage
+            lastTaillightRightImage = taillightRightImage
+            taillightLeftViews.append(taillightLeftView)
+            taillightRightViews.append(taillightRightView)
+            
+            if(buffer.count > 400) {
+                let (_, _, _, berWithOffset) = analyzer.evalBER(for: buffer)
+                print(berWithOffset)
+                buffer.removeAll()
+            }
+        }
+    }
+    
+    private func captureCurrentFrameAsImage() -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(self.view.bounds.size, false, 0.0)
+        defer { UIGraphicsEndImageContext() }
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+
+    private func cropImage(to boundingBox: CGRect, from image: UIImage) -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+        guard let croppedCGImage = cgImage.cropping(to: boundingBox) else { return nil }
+        return UIImage(cgImage: croppedCGImage)
+    }
+
     
     // Pinch to Zoom Start ---------------------------------------------------------------------------------------------
     let minimumZoom: CGFloat = 1.0
