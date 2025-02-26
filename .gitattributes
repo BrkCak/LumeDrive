@@ -1,0 +1,6 @@
+YOLO/Models/yolov8l.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
+YOLO/Models/yolov8m.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
+YOLO/Models/yolov8n.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
+YOLO/Models/yolov8s.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
+YOLO/Models/yolov8x.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
+taillight-state-classification.h5 filter=lfs diff=lfs merge=lfs -text
