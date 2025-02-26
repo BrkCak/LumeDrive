@@ -18,12 +18,11 @@
 		6381D21A2B7817C200ABA4E8 /* yolov8s.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 6381D2152B7817C200ABA4E8 /* yolov8s.mlpackage */; };
 		6381D21B2B7817C200ABA4E8 /* yolov8m.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 6381D2162B7817C200ABA4E8 /* yolov8m.mlpackage */; };
 		6381D21C2B7817C200ABA4E8 /* yolov8n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 6381D2172B7817C200ABA4E8 /* yolov8n.mlpackage */; };
-		63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44D22186177008AE681 /* LaunchScreen.storyboard */; };
 		63CF37202514455300E2DEA1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6323C44F22186177008AE681 /* Main.storyboard */; };
-		67104B7F2D18F5A6008011D7 /* OpenCVWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 67104B7E2D18F5A6008011D7 /* OpenCVWrapper.m */; };
 		67350CEC2D1378B600265F51 /* BERAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67350CEB2D1378B600265F51 /* BERAnalyzer.swift */; };
+		6759BFE62D4D3E8D00A625C3 /* TaillightsRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6759BFE52D4D3E8D00A625C3 /* TaillightsRingBuffer.swift */; };
 		67724BB52CE4F420001AF004 /* DifferentialTaillightClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */; };
-		67B1C93D2D03B7E300D3FB7E /* CNNTaillightClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B1C93C2D03B7D100D3FB7E /* CNNTaillightClassifier.swift */; };
+		6783C9802D4BEDEB002AD6FF /* BerRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6783C97F2D4BEDEB002AD6FF /* BerRingBuffer.swift */; };
 		67DDD7D32CDBF36E00C5A4E7 /* StaticTaillightDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */; };
 		67EC4B4E2CEE267D00C3C328 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 67EC4B4D2CEE267D00C3C328 /* opencv2.framework */; };
 		67EC4B512CEE26C300C3C328 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 67EC4B502CEE26C300C3C328 /* Accelerate.framework */; };
@@ -45,7 +44,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		6323C44D22186177008AE681 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6323C44F22186177008AE681 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		632892DF22EB3DB100A12D9C /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; path = Info.plist; sourceTree = "<group>"; };
 		633BC6FA22EDE73D00821BCA /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
@@ -60,13 +58,11 @@
 		6381D2162B7817C200ABA4E8 /* yolov8m.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolov8m.mlpackage; sourceTree = "<group>"; };
 		6381D2172B7817C200ABA4E8 /* yolov8n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolov8n.mlpackage; sourceTree = "<group>"; };
 		63B8B0A821E62A890026FBC3 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		670ED9D72D24E061006582E2 /* CNNTaillightClassifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CNNTaillightClassifier.h; sourceTree = "<group>"; };
-		67104B7D2D18F59B008011D7 /* OpenCVWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OpenCVWrapper.h; sourceTree = "<group>"; };
-		67104B7E2D18F5A6008011D7 /* OpenCVWrapper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OpenCVWrapper.m; sourceTree = "<group>"; };
 		671EEB0C2D15BDE5005AA06C /* YOLOTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YOLOTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		67350CEB2D1378B600265F51 /* BERAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BERAnalyzer.swift; sourceTree = "<group>"; };
+		6759BFE52D4D3E8D00A625C3 /* TaillightsRingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaillightsRingBuffer.swift; sourceTree = "<group>"; };
 		67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DifferentialTaillightClassifier.swift; sourceTree = "<group>"; };
-		67B1C93C2D03B7D100D3FB7E /* CNNTaillightClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CNNTaillightClassifier.swift; sourceTree = "<group>"; };
+		6783C97F2D4BEDEB002AD6FF /* BerRingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BerRingBuffer.swift; sourceTree = "<group>"; };
 		67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticTaillightDetector.swift; sourceTree = "<group>"; };
 		67EC4B4A2CEE24D600C3C328 /* YOLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YOLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67EC4B4D2CEE267D00C3C328 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = "<group>"; };
@@ -81,25 +77,8 @@
 		8EDAA633C1F2B50286D16008 /* BoundingBoxView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoundingBoxView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		671EEB352D179BDD005AA06C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"taillight-state-classification.h5",
-			);
-			target = 7BCB411621C3096100BFC4D0 /* YOLO */;
-		};
-		671EEB362D179BDD005AA06C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"taillight-state-classification.h5",
-			);
-			target = 67350CF72D137D6D00265F51 /* YOLOTests */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		671EEB2F2D179BDD005AA06C /* YOLOTests */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (671EEB352D179BDD005AA06C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 671EEB362D179BDD005AA06C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = YOLOTests; sourceTree = "<group>"; };
+		671EEB2F2D179BDD005AA06C /* YOLOTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = YOLOTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,7 +122,6 @@
 				636EFCA721E62DD300DE43BC /* AppDelegate.swift */,
 				636EFC9C21E62DD300DE43BC /* ViewController.swift */,
 				636EFCA221E62DD300DE43BC /* VideoCapture.swift */,
-				6323C44D22186177008AE681 /* LaunchScreen.storyboard */,
 				6323C44F22186177008AE681 /* Main.storyboard */,
 				633BC6FA22EDE73D00821BCA /* Settings.bundle */,
 				632892DF22EB3DB100A12D9C /* Info.plist */,
@@ -167,8 +145,9 @@
 		67DDD7D22CDBF36E00C5A4E7 /* V2V-Occ-Extension */ = {
 			isa = PBXGroup;
 			children = (
+				6759BFE52D4D3E8D00A625C3 /* TaillightsRingBuffer.swift */,
 				67350CEB2D1378B600265F51 /* BERAnalyzer.swift */,
-				67B1C93C2D03B7D100D3FB7E /* CNNTaillightClassifier.swift */,
+				6783C97F2D4BEDEB002AD6FF /* BerRingBuffer.swift */,
 				67724BB42CE4F420001AF004 /* DifferentialTaillightClassifier.swift */,
 				67DDD7D12CDBF36E00C5A4E7 /* StaticTaillightDetector.swift */,
 			);
@@ -190,9 +169,6 @@
 		67EC4B612CEE6C4400C3C328 /* Objective-C */ = {
 			isa = PBXGroup;
 			children = (
-				670ED9D72D24E061006582E2 /* CNNTaillightClassifier.h */,
-				67104B7E2D18F5A6008011D7 /* OpenCVWrapper.m */,
-				67104B7D2D18F59B008011D7 /* OpenCVWrapper.h */,
 				67EC4B5E2CEE678A00C3C328 /* DifferentialTaillightClassifierWrapper.mm */,
 				67EC4B5D2CEE675400C3C328 /* DifferentialTaillightClassifierWrapper.h */,
 				67EC4B5C2CEE29DE00C3C328 /* PrefixHeader.pch */,
@@ -313,7 +289,6 @@
 			files = (
 				636EFCB921E62E3900DE43BC /* Assets.xcassets in Resources */,
 				63CF37202514455300E2DEA1 /* Main.storyboard in Resources */,
-				63CF371F2514455300E2DEA1 /* LaunchScreen.storyboard in Resources */,
 				633BC6FB22EDE73D00821BCA /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -354,17 +329,17 @@
 			files = (
 				6381D21B2B7817C200ABA4E8 /* yolov8m.mlpackage in Sources */,
 				67EC4B5F2CEE678A00C3C328 /* DifferentialTaillightClassifierWrapper.mm in Sources */,
+				6759BFE62D4D3E8D00A625C3 /* TaillightsRingBuffer.swift in Sources */,
 				6381D21C2B7817C200ABA4E8 /* yolov8n.mlpackage in Sources */,
 				67DDD7D32CDBF36E00C5A4E7 /* StaticTaillightDetector.swift in Sources */,
 				636EFCAF21E62DD300DE43BC /* VideoCapture.swift in Sources */,
+				6783C9802D4BEDEB002AD6FF /* BerRingBuffer.swift in Sources */,
 				636166EA251443B20054FA7E /* ThresholdProvider.swift in Sources */,
 				6381D2182B7817C200ABA4E8 /* yolov8l.mlpackage in Sources */,
 				67724BB52CE4F420001AF004 /* DifferentialTaillightClassifier.swift in Sources */,
 				6381D21A2B7817C200ABA4E8 /* yolov8s.mlpackage in Sources */,
 				6381D2192B7817C200ABA4E8 /* yolov8x.mlpackage in Sources */,
 				636EFCB321E62DD300DE43BC /* AppDelegate.swift in Sources */,
-				67104B7F2D18F5A6008011D7 /* OpenCVWrapper.m in Sources */,
-				67B1C93D2D03B7E300D3FB7E /* CNNTaillightClassifier.swift in Sources */,
 				67350CEC2D1378B600265F51 /* BERAnalyzer.swift in Sources */,
 				636EFCAA21E62DD300DE43BC /* ViewController.swift in Sources */,
 				8EDAA33950796844333D60A7 /* BoundingBoxView.swift in Sources */,

@@ -1,10 +1,6 @@
-//  Ultralytics YOLO 🚀 - AGPL-3.0 License
-//
 //  Video Capture for Ultralytics YOLOv8 Preview on iOS
 //  Part of the Ultralytics YOLO app, this file defines the VideoCapture class to interface with the device's camera,
 //  facilitating real-time video capture and frame processing for YOLOv8 model previews.
-//  Licensed under AGPL-3.0. For commercial use, refer to Ultralytics licensing: https://ultralytics.com/license
-//  Access the source code: https://github.com/ultralytics/yolo-ios-app
 //
 //  This class encapsulates camera initialization, session management, and frame capture delegate callbacks.
 //  It dynamically selects the best available camera device, configures video input and output, and manages
@@ -110,12 +106,15 @@ public class VideoCapture: NSObject {
         do {
             try captureDevice.lockForConfiguration()
             
-            let exposureDuration = CMTimeMake(value: 1, timescale: 3000) //Belichtungszeit von 1/3000 sek
-            captureDevice.setExposureModeCustom(duration: exposureDuration, iso: 3072, completionHandler: nil)
+            let exposureDuration = CMTimeMake(value: 1, timescale: 3500) //Belichtungszeit von 1/3000 sek
+            //let exposureDuration = captureDevice.activeFormat.minExposureDuration
+            let maxISO = captureDevice.activeFormat.maxISO
+            //print(exposureDuration, maxISO)
+            captureDevice.setExposureModeCustom(duration: exposureDuration, iso: maxISO, completionHandler: nil)
+            //captureDevice.setExposureModeCustom(duration: exposureDuration, iso: 3072, completionHandler: nil)
             
             captureDevice.focusMode = .continuousAutoFocus
             captureDevice.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
-            //captureDevice.exposureMode = .continuousAutoExposure
             captureDevice.unlockForConfiguration()
         } catch {
             print("Unable to configure the capture device.")
@@ -172,6 +171,6 @@ extension VideoCapture: AVCaptureVideoDataOutputSampleBufferDelegate {
         _ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        // Optionally handle dropped frames, e.g., due to full buffer.
+        print("Frame dropped! Überprüfe Leistungsengpässe.")
     }
 }

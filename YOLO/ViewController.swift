@@ -1,25 +1,36 @@
-//  Ultralytics YOLO 🚀 - AGPL-3.0 License
-//
-//  Main View Controller for Ultralytics YOLO App
-//  This file is part of the Ultralytics YOLO app, enabling real-time object detection using YOLOv8 models on iOS devices.
-//  Licensed under AGPL-3.0. For commercial use, refer to Ultralytics licensing: https://ultralytics.com/license
-//  Access the source code: https://github.com/ultralytics/yolo-ios-app
-//
-//  This ViewController manages the app's main screen, handling video capture, model selection, detection visualization,
-//  and user interactions. It sets up and controls the video preview layer, handles model switching via a segmented control,
-//  manages UI elements like sliders for confidence and IoU thresholds, and displays detection results on the video feed.
-//  It leverages CoreML, Vision, and AVFoundation frameworks to perform real-time object detection and to interface with
-//  the device's camera.
-
 import AVFoundation
 import CoreML
 import CoreMedia
 import UIKit
 import Vision
 
-var mlModel = try! yolov8m(configuration: .init()).model
+/**
+# ViewController
+ 
+A `UIViewController` for real-time object and taillight recognition in video streams using CoreML, Vision, and AVFoundation.
+ 
+## Overview
+- Processes live video data from the device camera.
+- Utilizes YOLOv8 models (n/s/m/l/x) for car detection.
+- Analyzes taillights and turn signals using image processing and a BER (Bit Error Rate) analyzer.
+- Provides UI controls for model parameters (confidence, IoU), zoom functionality, and data export.
+ 
+## Key Components
+- **CoreML**: Integration of YOLOv8 models for object detection.
+- **Vision**: Handles pixel buffer processing and coordinate transformations.
+- **AVFoundation**: Manages video capture, frame extraction, and presentation.
+- **UI**: Dynamically adapts to device orientation, displays real-time stats (FPS, BER), and offers interactive controls.
+ 
+## Notes
+- Supports both portrait and landscape modes with orientation-specific UI elements.
+- Developer mode enables saving detection data and frames for debugging.
+*/
+
+var mlModel = try! yolov8n(configuration: .init()).model
 
 class ViewController: UIViewController {
+    // MARK: - Properties
+
     @IBOutlet var videoPreview: UIView!
     @IBOutlet var View0: UIView!
     @IBOutlet var segmentedControl: UISegmentedControl!
@@ -32,6 +43,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var sliderIoULandScape: UISlider!
     @IBOutlet weak var labelName: UILabel!
     @IBOutlet weak var labelFPS: UILabel!
+    @IBOutlet weak var labelBER: UILabel!
     @IBOutlet weak var labelZoom: UILabel!
     @IBOutlet weak var labelVersion: UILabel!
     @IBOutlet weak var labelSlider: UILabel!
@@ -44,23 +56,38 @@ class ViewController: UIViewController {
     @IBOutlet weak var toolBar: UIToolbar!
     
     let selection = UISelectionFeedbackGenerator()
+    /// CoreML model for object detection (default: YOLOv8n).
     var detector = try! VNCoreMLModel(for: mlModel)
     var session: AVCaptureSession!
+    /// Manages camera input and video capture session.
     var videoCapture: VideoCapture!
+    /// Buffer for the current video frame being processed.
     var currentBuffer: CVPixelBuffer?
-    var framesDone = 0
+    /// Performance metrics (FPS, inference time).
     var t0 = 0.0  // inference start
     var t1 = 0.0  // inference dt
     var t2 = 0.0  // inference dt smoothed
     var t3 = CACurrentMediaTime()  // FPS start
     var t4 = 0.0  // FPS dt smoothed
-    // var cameraOutput: AVCapturePhotoOutput!
+    var currentImage: UIImage?
+
+    let tailLightClassifier = DifferentialTaillightClassifier()
+    let taillightDetector = StaticTaillightDetector()
+    let leftTaillightBuffer = TaillightsRingBuffer()
+    let rightTaillightBuffer = TaillightsRingBuffer()
+    let analyzer = BERAnalyzer()
+    lazy var berBuffer: BerRingBuffer = BerRingBuffer(capacity: analyzer.refBit.count, fileName: "BerBuffer.txt")
+    var berUI = Double()
+    var lastTimestamp: CMTime = .invalid
+    var frameInterval = CMTime()
+    var intervalSeconds = Double()
+    var lastCarDetectionTime: CFTimeInterval?  // Timestamp for the last detected car
     
     // Developer mode
     let developerMode = UserDefaults.standard.bool(forKey: "developer_mode")  // developer mode selected in settings
     let save_detections = false  // write every detection to detections.txt
     let save_frames = false  // write every frame to frames.txt
-    
+    /// Vision request to handle CoreML predictions.
     lazy var visionRequest: VNCoreMLRequest = {
         let request = VNCoreMLRequest(
             model: detector,
@@ -72,17 +99,27 @@ class ViewController: UIViewController {
         request.imageCropAndScaleOption = .scaleFill  // .scaleFit, .scaleFill, .centerCrop
         return request
     }()
-    
+    // MARK: - Lifecycle
+
+    /**
+     Initializes UI, bounding box views, and starts video capture.
+     - Sets default slider values.
+     - Registers device orientation change notifications.
+     */
     override func viewDidLoad() {
         super.viewDidLoad()
-        slider.value = 30
+        slider.value = 1
         setLabels()
         setUpBoundingBoxViews()
         setUpOrientationChangeNotification()
         startVideo()
         // setModel()
     }
-    
+    /**
+     Adjusts UI layout during device orientation changes.
+     - Parameter size: New view size.
+     - Parameter coordinator: Transition coordinator.
+     */
     override func viewWillTransition(
         to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator
     ) {
@@ -132,7 +169,13 @@ class ViewController: UIViewController {
     @IBAction func vibrate(_ sender: Any) {
         selection.selectionChanged()
     }
-    
+    // MARK: - UI Interactions
+
+    /**
+     Switches the CoreML model based on the selected segment.
+     - Parameter sender: Triggering segmented control.
+     - Supported models: YOLOv8n, YOLOv8s, YOLOv8m, YOLOv8l, YOLOv8x.
+     */
     @IBAction func indexChanged(_ sender: Any) {
         selection.selectionChanged()
         activityIndicator.startAnimating()
@@ -181,7 +224,10 @@ class ViewController: UIViewController {
         t4 = 0.0  // FPS dt smoothed
     }
     
-    /// Update thresholds from slider values
+    /**
+     Updates confidence and IoU thresholds for object detection.
+     - Parameter sender: Slider instance.
+     */
     @IBAction func sliderChanged(_ sender: Any) {
         let conf = Double(round(100 * sliderConf.value)) / 100
         let iou = Double(round(100 * sliderIoU.value)) / 100
@@ -190,7 +236,7 @@ class ViewController: UIViewController {
         detector.featureProvider = ThresholdProvider(iouThreshold: iou, confidenceThreshold: conf)
         
     }
-    
+    /// Updates UI labels with model metadata.
     func setLabels() {
         self.labelName.text = "YOLOv8m"
         self.labelVersion.text = "Version " + UserDefaults.standard.string(forKey: "app_version")!
@@ -218,39 +264,22 @@ class ViewController: UIViewController {
             with: settings, delegate: self as AVCapturePhotoCaptureDelegate)
     }
     
-    let maxBoundingBoxViews = 100
+    let maxBoundingBoxViews = 1
     var boundingBoxViews = [BoundingBoxView]()
-    var boundingBoxViewTaillightLeft: BoundingBoxView?
-    var boundingBoxViewTaillightRight: BoundingBoxView?
-    var taillightLeftViews: [BoundingBoxView] = []
-    var taillightRightViews: [BoundingBoxView] = []
-    let analyzer = BERAnalyzer()
-    var carBoundingBoxViews: [BoundingBoxView] = []
-    var colors: [String: UIColor] = [:]
-    
+    /// Initializes bounding box views for detection visualization.
     func setUpBoundingBoxViews() {
         // Ensure all bounding box views are initialized up to the maximum allowed.
         while boundingBoxViews.count < maxBoundingBoxViews {
             boundingBoxViews.append(BoundingBoxView())
         }
-        
-        // Retrieve class labels directly from the CoreML model's class labels, if available.
-        guard let classLabels = mlModel.modelDescription.classLabels as? [String] else {
-            fatalError("Class labels are missing from the model description")
-        }
-        
-        // Assign random colors to the classes.
-        for label in classLabels {
-            if colors[label] == nil {  // if key not in dict
-                colors[label] = UIColor(
-                    red: CGFloat.random(in: 0...1),
-                    green: CGFloat.random(in: 0...1),
-                    blue: CGFloat.random(in: 0...1),
-                    alpha: 0.6)
-            }
-        }
     }
-    
+    // MARK: - Video Processing
+
+    /**
+     Starts video capture and configures preview layers.
+     - Uses `AVCaptureSession` with `.photo` preset.
+     - Adds bounding box layers to the UI.
+     */
     func startVideo() {
         videoCapture = VideoCapture()
         videoCapture.delegate = self
@@ -274,7 +303,11 @@ class ViewController: UIViewController {
             }
         }
     }
-    
+    /**
+     Processes a new video frame and initiates inference.
+     - Parameter sampleBuffer: Captured frame as `CMSampleBuffer`.
+     - Handles image orientation and executes Vision request.
+     */
     func predict(sampleBuffer: CMSampleBuffer) {
         if currentBuffer == nil, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             currentBuffer = pixelBuffer
@@ -314,7 +347,7 @@ class ViewController: UIViewController {
             currentBuffer = nil
         }
     }
-    
+    /*
     func processObservations(for request: VNRequest, error: Error?) {
         DispatchQueue.main.async {
             if let results = request.results as? [VNRecognizedObjectObservation] {
@@ -331,8 +364,77 @@ class ViewController: UIViewController {
             self.labelFPS.text = String(format: "%.1f FPS - %.1f ms", 1 / self.t4, self.t2 * 1000)  // t2 seconds to ms
             self.t3 = CACurrentMediaTime()
         }
+     }
+ 
+     func processObservations(for request: VNRequest, error: Error?) {
+     DispatchQueue.main.async {
+     let carPredictions: [VNRecognizedObjectObservation]
+     
+     if let results = request.results as? [VNRecognizedObjectObservation] {
+     carPredictions = results.filter { observation in
+     guard let topLabel = observation.labels.first else { return false }
+     return topLabel.identifier.lowercased() == "car" && topLabel.confidence > 0.5
+     }
+     } else {
+     carPredictions = []
+     }
+     
+     self.show(predictions: carPredictions)
+     
+     // Zeitmessung zwischen Auto-Erkennungen
+     if !carPredictions.isEmpty { // Falls mindestens ein Auto erkannt wurde
+     let currentTime = CACurrentMediaTime()
+     if let lastTime = self.lastCarDetectionTime {
+     let timeDifference = currentTime - lastTime
+     appendIntervalToFile(timeDifference*1000, berValue: self.berUI)
+     }
+     self.lastCarDetectionTime = currentTime
+     }
+     
+     // FPS-Berechnung (beibehalten)
+     if self.t1 < 10.0 {
+     self.t2 = self.t1 * 0.05 + self.t2 * 0.95
+     }
+     self.t4 = (CACurrentMediaTime() - self.t3) * 0.05 + self.t4 * 0.95
+     self.labelFPS.text = String(format: "%.1f FPS - %.1f ms", 1 / self.t4, self.t2 * 1000)
+     self.t3 = CACurrentMediaTime()
+     }
+     }
+     */
+    // MARK: - Object Detection
+
+    /**
+     Processes Vision request results.
+     - Filters "car" detections and updates UI.
+     - Calculates FPS and performance metrics.
+     - Parameter request: Vision request containing results.
+     - Parameter error: Optional processing error.
+     */
+    func processObservations(for request: VNRequest, error: Error?) {
+        DispatchQueue.main.async {
+            let carPredictions: [VNRecognizedObjectObservation]
+            
+            if let results = request.results as? [VNRecognizedObjectObservation] {
+                // Filtere nur Objekte mit dem Label "car"
+                carPredictions = results.filter { observation in
+                    // Prüfe das Top-Label mit höchster Confidence
+                    guard let topLabel = observation.labels.first else { return false }
+                    return topLabel.identifier.lowercased() == "car" // Anpassung je nach Modell-Label
+                }
+            } else {
+                carPredictions = []
+            }
+            self.show(predictions: carPredictions)
+            
+            if self.t1 < 10.0 {
+                self.t2 = self.t1 * 0.05 + self.t2 * 0.95
+            }
+            self.t4 = (CACurrentMediaTime() - self.t3) * 0.05 + self.t4 * 0.95
+            self.labelFPS.text = String(format: "%.1f FPS - %.1f ms", 1 / self.t4, self.t2 * 1000)
+            self.t3 = CACurrentMediaTime()
+        }
     }
-    
+
     // Save text file
     func saveText(text: String, file: String = "saved.txt") {
         if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -386,14 +488,13 @@ class ViewController: UIViewController {
             return 0
         }
     }
-    
+    /**
+     Displays detected objects as bounding boxes.
+     - Transforms normalized coordinates to screen space.
+     - Analyzes taillights and saves debug data (if enabled).
+     - Parameter predictions: Array of detected objects (`VNRecognizedObjectObservation`).
+     */
     func show(predictions: [VNRecognizedObjectObservation]) {
-        carBoundingBoxViews.removeAll()
-        taillightLeftViews.forEach { $0.hide() }
-        taillightRightViews.forEach { $0.hide() }
-        taillightLeftViews.removeAll()
-        taillightRightViews.removeAll()
-
         let width = videoPreview.bounds.width
         let height = videoPreview.bounds.height
 
@@ -410,47 +511,68 @@ class ViewController: UIViewController {
                      Double(calendar.component(.nanosecond, from: date)) / 1E9
 
         labelSlider.text = "\(predictions.count) items (max \(Int(slider.value)))"
-
+        
         for i in 0..<boundingBoxViews.count where i < predictions.count && i < Int(slider.value) {
             let prediction = predictions[i]
             var rect = prediction.boundingBox
-
             rect = adjustBoundingBox(rect: rect)
-
             rect = transformBoundingBox(rect: rect, width: width, height: height, ratio: ratio)
-
+            
             let bestClass = prediction.labels[0].identifier
             let confidence = prediction.labels[0].confidence
             
-            if bestClass == "car" && confidence > 0.6 {
+            if let currentImage = currentImage {
                 let label = String(format: "%@ %.1f", bestClass, confidence * 100)
                 let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
-
                 boundingBoxViews[i].show(frame: rect, label: label, color: UIColor.systemGreen, alpha: alpha)
-                carBoundingBoxViews.append(boundingBoxViews[i])
-
-                detectAndShowTaillights(for: carBoundingBoxViews)
-            } else {
-                boundingBoxViews[i].hide()
+                
+                let imageWidth = currentImage.size.width
+                let imageHeight = currentImage.size.height
+                
+                let originalRect = prediction.boundingBox
+                let x = originalRect.origin.x * imageWidth
+                let y = (1 - originalRect.origin.y - originalRect.height) * imageHeight
+                let cropWidth = originalRect.width * imageWidth
+                let cropHeight = originalRect.height * imageHeight
+                
+                let safeX = max(0, min(x, imageWidth - 1))
+                let safeY = max(0, min(y, imageHeight - 1))
+                let safeWidth = max(1, min(cropWidth, imageWidth - safeX))
+                let safeHeight = max(1, min(cropHeight, imageHeight - safeY))
+                
+                let cropRect = CGRect(x: safeX, y: safeY, width: safeWidth, height: safeHeight)
+                let (tll, tlr) = taillightDetector.positionTaillights(frame: cropRect)
+                
+                if (taillightDetector.cropImage(from: currentImage, to: cropRect) != nil),
+                   let croppedLeftTailLight = taillightDetector.cropImage(from: currentImage, to: tll),
+                   let croppedRightTailLight = taillightDetector.cropImage(from: currentImage, to: tlr) {
+                    //saveImageToPhotos(image: croppedImage, frameNumber: frameCount)
+                    leftTaillightBuffer.addImage(croppedLeftTailLight)
+                    //leftTaillightBuffer.saveBufferToDisk(name: "leftTaillightBuffer")
+                    rightTaillightBuffer.addImage(croppedRightTailLight)
+                    //rightTaillightBuffer.saveBufferToDisk(name: "rightTaillightBuffer")
+                } else {
+                    print("⚠️ Fehler beim Erstellen des Bildausschnitts!")
+                    print("📸 Originalbild: \(currentImage)")
+                    print("🔍 Ausschnitt-Rect: \(cropRect)")
+                }
+                tailLightClassifier.tailLightDetectionLoop(carBoundingBoxView: boundingBoxViews[i], videoPreview: videoPreview)
+                tailLightClassifier.classifyTaillights(leftTailLightBuffer: leftTaillightBuffer, rightTailLightBuffer: rightTaillightBuffer, berBuffer: berBuffer)
+                
             }
-            /*
-            //Test
-            let label = String(format: "%@ %.1f", bestClass, confidence * 100)
-            let alpha = CGFloat((confidence - 0.2) / (1.0 - 0.2) * 0.9)
-            boundingBoxViews[i].show(frame: rect, label: label, color: UIColor.systemGreen, alpha: alpha)
-            carBoundingBoxViews.append(boundingBoxViews[i])
-            detectAndShowTaillights(for: carBoundingBoxViews)
-             //Test
-            */
+            
+            if (berBuffer.isFull) {
+                berUI = analyzer.evalBER(for: berBuffer.getBuffer()) ?? 0.0
+                labelBER.text = String(format: " BER: %.2f%%", berUI)
+            }
+            
             if developerMode, save_detections {
-                let detectionStr = String(format: "%.3f %.3f %.3f %@ %.2f %.1f %.1f %.1f %.1f\n",
+                let detectionStr = String(format: "%.3f %.3f %.3f %@ %.2f\n",
                                           secDay, freeSpace(), UIDevice.current.batteryLevel,
-                                          bestClass, confidence, rect.origin.x, rect.origin.y,
-                                          rect.size.width, rect.size.height)
+                                          bestClass, confidence)
                 saveText(text: detectionStr, file: "detections.txt")
             }
         }
-
         if developerMode, save_frames {
             let frameStats = String(format: "%.3f %.3f %.3f %.3f %.1f %.1f %.1f\n",
                                     secDay, freeSpace(), memoryUsage(), UIDevice.current.batteryLevel,
@@ -458,6 +580,37 @@ class ViewController: UIViewController {
             saveText(text: frameStats, file: "frames.txt")
         }
     }
+    
+    ///for debugging to see which pictures are incoming
+    func saveImageToPhotos(image: UIImage) {
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+    }
+    func saveImageToPhotos(image: UIImage, frameNumber: Int) {
+        let text = "Frame \(frameNumber)"
+        let font = UIFont.boldSystemFont(ofSize: 40)
+        let textColor = UIColor.red
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: textColor,
+            .backgroundColor: UIColor.clear
+        ]
+        
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        
+        let textRect = CGRect(x: 20, y: 20, width: image.size.width - 40, height: 50)
+        text.draw(in: textRect, withAttributes: textAttributes)
+        
+        let annotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        if let annotatedImage = annotatedImage {
+            UIImageWriteToSavedPhotosAlbum(annotatedImage, nil, nil, nil)
+        } else {
+            print("Fehler: Annotiertes Bild konnte nicht erstellt werden.")
+        }
+    }
+
 
     func adjustBoundingBox(rect: CGRect) -> CGRect {
         switch UIDevice.current.orientation {
@@ -474,7 +627,6 @@ class ViewController: UIViewController {
             return rect
         }
     }
-
     func transformBoundingBox(rect: CGRect, width: CGFloat, height: CGFloat, ratio: CGFloat) -> CGRect {
         var transformedRect = rect
 
@@ -492,81 +644,6 @@ class ViewController: UIViewController {
 
         return VNImageRectForNormalizedRect(transformedRect, Int(width), Int(height))
     }
-    
-    var lastTaillightLeftImage: UIImage?
-    var lastTaillightRightImage: UIImage?
-    var buffer: [Int] = []
-    func detectAndShowTaillights(for carViews: [BoundingBoxView]) {
-        let differentialClassifier = DifferentialTaillightClassifier()
-        
-        for carBoundingBoxView in carViews {
-            let detectTaillight = StaticTaillightDetector()
-            let (tll, tlr) = detectTaillight.detectTaillights(frame: carBoundingBoxView.currentFrame)
-            
-            let taillightLeftView = BoundingBoxView()
-            taillightLeftView.addToLayer(self.view.layer)
-            taillightLeftView.show(frame: tll, label: "LeftTaillight", color: UIColor.blue, alpha: 0.8)
-            taillightLeftViews.append(taillightLeftView)
-            
-            let taillightRightView = BoundingBoxView()
-            taillightRightView.addToLayer(self.view.layer)
-            taillightRightView.show(frame: tlr, label: "RightTaillight", color: UIColor.red, alpha: 0.8)
-            taillightRightViews.append(taillightRightView)
-            
-            guard let currentFrameImage = captureCurrentFrameAsImage() else { continue }
-            
-            let taillightLeftImage = cropImage(to: tll, from: currentFrameImage)
-            let taillightRightImage = cropImage(to: tlr, from: currentFrameImage)
-            
-            //Differential
-            let isLeftActive = differentialClassifier.classifyTaillight(
-                currentImage: taillightLeftImage,
-                lastImage: lastTaillightLeftImage
-            )
-            if(isLeftActive) {
-                taillightLeftView.show(frame: tll, label: "LeftTaillight", color: UIColor.purple, alpha: 0.8)
-                buffer.append(1)
-            } else {
-                buffer.append(0)
-            }
-            
-            let isRightActive = differentialClassifier.classifyTaillight(
-                currentImage: taillightRightImage,
-                lastImage: lastTaillightRightImage
-            )
-            if(isRightActive) {
-                taillightRightView.show(frame: tlr, label: "RightTaillight", color: UIColor.purple, alpha: 0.8)
-                buffer.append(1)
-            } else {
-                buffer.append(0)
-            }
-            //Differential
-            
-            lastTaillightLeftImage = taillightLeftImage
-            lastTaillightRightImage = taillightRightImage
-            taillightLeftViews.append(taillightLeftView)
-            taillightRightViews.append(taillightRightView)
-            
-            if(buffer.count > 400) {
-                let (_, _, _, berWithOffset) = analyzer.evalBER(for: buffer)
-                print(berWithOffset)
-                buffer.removeAll()
-            }
-        }
-    }
-    
-    private func captureCurrentFrameAsImage() -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(self.view.bounds.size, false, 0.0)
-        defer { UIGraphicsEndImageContext() }
-        return UIGraphicsGetImageFromCurrentImageContext()
-    }
-
-    private func cropImage(to boundingBox: CGRect, from image: UIImage) -> UIImage? {
-        guard let cgImage = image.cgImage else { return nil }
-        guard let croppedCGImage = cgImage.cropping(to: boundingBox) else { return nil }
-        return UIImage(cgImage: croppedCGImage)
-    }
-
     
     // Pinch to Zoom Start ---------------------------------------------------------------------------------------------
     let minimumZoom: CGFloat = 1.0
@@ -607,14 +684,71 @@ class ViewController: UIViewController {
         }
     }  // Pinch to Zoom End --------------------------------------------------------------------------------------------
 }  // ViewController class End
+// MARK: - VideoCaptureDelegate Extension
 
+/**
+ Handles video frame capture events.
+ - Extracts frames and forwards them for inference.
+ - Measures frame intervals for BER calculations.
+ */
 extension ViewController: VideoCaptureDelegate {
     func videoCapture(_ capture: VideoCapture, didCaptureVideoFrame sampleBuffer: CMSampleBuffer) {
+        let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        let previousTimestamp = lastTimestamp
+        lastTimestamp = timestamp
+        if previousTimestamp.isValid && berBuffer.isFull {
+            frameInterval = CMTimeSubtract(timestamp, previousTimestamp)
+            intervalSeconds = CMTimeGetSeconds(frameInterval) * 1000
+            berBuffer.saveBufferToFile(berValue: berUI, interval: intervalSeconds)
+        }
+        
+        currentImage = UIImage(sampleBuffer: sampleBuffer)
         predict(sampleBuffer: sampleBuffer)
     }
 }
 
-// Programmatically save image
+func appendIntervalToFile(_ interval: Double, berValue: Double) {
+    let fileName = "frameIntervals.txt"
+    if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+        let fileURL = documentsDirectory.appendingPathComponent(fileName)
+        let text = "Frame interval: \(interval)ms | BER: \(berValue)%%\n"
+        
+        if let data = text.data(using: .utf8) {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                do {
+                    let fileHandle = try FileHandle(forWritingTo: fileURL)
+                    fileHandle.seekToEndOfFile()
+                    fileHandle.write(data)
+                    fileHandle.closeFile()
+                } catch {
+                    print("Fehler beim Schreiben in die Datei: \(error)")
+                }
+            } else {
+                do {
+                    try text.write(to: fileURL, atomically: true, encoding: .utf8)
+                } catch {
+                    print("Fehler beim Erstellen der Datei: \(error)")
+                }
+            }
+        }
+    }
+}
+
+extension UIImage {
+    convenience init?(sampleBuffer: CMSampleBuffer) {
+    guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
+    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+    let context = CIContext()
+    guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
+    self.init(cgImage: cgImage, scale: 1.0, orientation: .up)
+    }
+}
+// MARK: - AVCapturePhotoCaptureDelegate Extension
+
+/**
+ Manages photo capture and sharing.
+ - Exports screenshots with overlay data (bounding boxes, stats).
+ */
 extension ViewController: AVCapturePhotoCaptureDelegate {
     func photoOutput(
         _ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?
