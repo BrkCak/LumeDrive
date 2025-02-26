@@ -4,3 +4,7 @@ YOLO/Models/yolov8n.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lf
 YOLO/Models/yolov8s.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
 YOLO/Models/yolov8x.mlpackage/Data/com.apple.CoreML/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
 taillight-state-classification.h5 filter=lfs diff=lfs merge=lfs -text
+LumeDrive.png filter=lfs diff=lfs merge=lfs -text
+opencv2.framework/Versions/A/Headers/Calib3d.h filter=lfs diff=lfs merge=lfs -text
+opencv2.framework/Versions/A/Headers/core/hal/intrin_rvv_010_compat_non-policy.hpp filter=lfs diff=lfs merge=lfs -text
+opencv2.framework/Versions/A/opencv2 filter=lfs diff=lfs merge=lfs -text
