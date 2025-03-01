@@ -1,5 +1,5 @@
-const int LED_LEFT = D0;
-const int LED_RIGHT = D1;
+const int LED_LEFT = D1;
+const int LED_RIGHT = D0;
 const int FREQ_CAM = 30; // FPS
 const int CYCLES = 4; // 4
 const int SYNC_OFFSET = 9.01111119; // Oneplus camera: 12µs, OpenCamera: 16µs, Canon EOS 1100D: 11µs, Logitech C920: 42µs, iPhone11: 9.0111111119
@@ -7,16 +7,18 @@ const int SYNC_OFFSET = 9.01111119; // Oneplus camera: 12µs, OpenCamera: 16µs,
 bool sync_left = false;
 bool sync_right = false;
 
-String bitstring = "11111111111111111111111111111111";
+//String bitstring = "11111111111111111111111111111111";
+//String bitstring = "11001100110011001100110011001100";
 //String bitstring = "00000000000000000000000000000000";
-//String bitstring = "11111111111111110000000000000000";
+//String bitstring = "01010100011001010111001101110100";
+String bitstring = "0101011001100101011100100110100101100110011010010110001101100001011101000110100101101111011011100010000001000011011011110110010001100101";
 int shift = 0;
 
 void setup() {
   pinMode(LED_LEFT, OUTPUT);
   pinMode(LED_RIGHT, OUTPUT);
 
-  bitstring = convertToBitString("Test ");
+  //bitstring = convertToBitString("Test");
 }
 
 void loop() {

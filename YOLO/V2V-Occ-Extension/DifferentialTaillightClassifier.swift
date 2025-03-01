@@ -92,9 +92,6 @@ class DifferentialTaillightClassifier {
                 last: leftLastImage
             )
             
-            //berArray.append(leftTailLightState ? 1 : 0)
-            //saveBerArrayToFile()
-            
             berBuffer.append(leftTailLightState ? 1 : 0)
             if(leftTailLightState) {
                 tailLightLeftBoundaryBox.show(frame: tll, label: "LeftTaillight", color: UIColor.purple, alpha: 0.8)
@@ -109,9 +106,6 @@ class DifferentialTaillightClassifier {
                 rightCurrentImage,
                 last: rightLastImage
             )
-            
-            //berArray.append(rightTailLightState ? 1 : 0)
-            //saveBerArrayToFile()
             
             berBuffer.append(rightTailLightState ? 1 : 0)
             if(rightTailLightState) {

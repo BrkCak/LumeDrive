@@ -26,7 +26,7 @@ A `UIViewController` for real-time object and taillight recognition in video str
 - Developer mode enables saving detection data and frames for debugging.
 */
 
-var mlModel = try! yolov8n(configuration: .init()).model
+var mlModel = try! yolov8s(configuration: .init()).model
 
 class ViewController: UIViewController {
     // MARK: - Properties
@@ -546,11 +546,8 @@ class ViewController: UIViewController {
                 if (taillightDetector.cropImage(from: currentImage, to: cropRect) != nil),
                    let croppedLeftTailLight = taillightDetector.cropImage(from: currentImage, to: tll),
                    let croppedRightTailLight = taillightDetector.cropImage(from: currentImage, to: tlr) {
-                    //saveImageToPhotos(image: croppedImage, frameNumber: frameCount)
                     leftTaillightBuffer.addImage(croppedLeftTailLight)
-                    //leftTaillightBuffer.saveBufferToDisk(name: "leftTaillightBuffer")
                     rightTaillightBuffer.addImage(croppedRightTailLight)
-                    //rightTaillightBuffer.saveBufferToDisk(name: "rightTaillightBuffer")
                 } else {
                     print("⚠️ Fehler beim Erstellen des Bildausschnitts!")
                     print("📸 Originalbild: \(currentImage)")

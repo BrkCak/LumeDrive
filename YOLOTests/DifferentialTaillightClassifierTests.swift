@@ -14,6 +14,20 @@ class DifferentialTaillightClassifierTests: XCTestCase {
         classifier = nil
         super.tearDown()
     }
+    func test1() {
+        let bundle = Bundle(for: type(of: self))
+        guard let path1 = bundle.path(forResource: "current", ofType: "png")
+        else {
+            XCTFail("Bilder konnten nicht gefunden werden")
+            return
+        }
+        guard let image1 = UIImage(contentsOfFile: path1)
+        else {
+            XCTFail("Bilder konnten nicht geladen werden")
+            return
+        }
+        var state = classifier.classifyTaillight(image1, last: image1)
+    }
     
     func testPoC() {
         let bundle = Bundle(for: type(of: self))
@@ -59,33 +73,6 @@ class DifferentialTaillightClassifierTests: XCTestCase {
         XCTAssertFalse(state, "State not changed")
         state = classifier1.classifyTaillight(image6, last: image5)
         XCTAssertTrue(state, "State changed")
-        
-        
-        /*
-        state = classifier.classifyTaillight(image4, last: image3)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image1, lastImage: image4, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image2, lastImage: image4, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image3, lastImage: image4, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertFalse(state, "State not changed")
-        
-        state = classifier.classifyTaillight(currentImage: image5, lastImage: image6, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image1, lastImage: image7, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image3, lastImage: image5, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertTrue(state, "State changed")
-        
-        state = classifier.classifyTaillight(currentImage: image5, lastImage: image7, wrapper: classifier.leftTailLihtWrapper)
-        XCTAssertFalse(state, "State not changed")
-         */
     }
     
     func saveImage(_ image: UIImage, to directory: String, filename: String) -> Bool {
