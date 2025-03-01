@@ -57,21 +57,25 @@
     return result;
 }
 
-#pragma mark - Entscheidungslogik (entsprechend Python-Version)
+#pragma mark - Entscheidungslogik
 - (BOOL)decideResult:(double)meanMaxDiff
        previousMean:(double)previousMean
     previousResult:(BOOL)previousResult {
     
-    if (meanMaxDiff > 90.0) {
-        return YES;
-    } else if (meanMaxDiff < 30.0) {
+    // 1. Strengerer Schwellwert für "0" (NO)
+    if (meanMaxDiff < 90.0) {  // Vorher 70.0 → Erhöht, um mehr 0-Bits zu erfassen
         return NO;
     }
-    
-    double delta = meanMaxDiff - previousMean;
-    if (delta > 20.0) {
+    // 2. Weniger aggressiver Schwellwert für "1" (YES)
+    else if (meanMaxDiff > 130.0) {  // Vorher 150.0 → Gesenkt, um Toleranz bei 1-Bits
         return YES;
-    } else if (delta < -20.0) {
+    }
+    
+    // 3. Asymmetrische Delta-Anpassung (weniger empfindlich für Rauschen)
+    double delta = meanMaxDiff - previousMean;
+    if (delta > 40.0) {  // Vorher 50.0 → Konservativer Wechsel zu "1"
+        return YES;
+    } else if (delta < -30.0) {  // Vorher -20.0 → Strengere Bedingung für "0"
         return NO;
     }
     
@@ -104,7 +108,9 @@
 }
 
 - (double)calculateMeanMaxDiff:(cv::Mat)diff {
-    cv::Mat flat = diff.reshape(1, 1);
+    cv::Mat blurred;
+    cv::GaussianBlur(diff, blurred, cv::Size(3, 3), 0);  // Rauschglättung
+    cv::Mat flat = blurred.reshape(1, 1);
     cv::Mat sorted;
     cv::sort(flat, sorted, cv::SORT_DESCENDING);
     int range = MIN(30, sorted.cols);
