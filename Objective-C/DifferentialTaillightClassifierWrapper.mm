@@ -62,20 +62,17 @@
        previousMean:(double)previousMean
     previousResult:(BOOL)previousResult {
     
-    // 1. Strengerer Schwellwert für "0" (NO)
-    if (meanMaxDiff < 90.0) {  // Vorher 70.0 → Erhöht, um mehr 0-Bits zu erfassen
+    if (meanMaxDiff < 90.0) {
         return NO;
     }
-    // 2. Weniger aggressiver Schwellwert für "1" (YES)
-    else if (meanMaxDiff > 130.0) {  // Vorher 150.0 → Gesenkt, um Toleranz bei 1-Bits
+    else if (meanMaxDiff > 130.0) {
         return YES;
     }
     
-    // 3. Asymmetrische Delta-Anpassung (weniger empfindlich für Rauschen)
     double delta = meanMaxDiff - previousMean;
-    if (delta > 40.0) {  // Vorher 50.0 → Konservativer Wechsel zu "1"
+    if (delta > 40.0) {
         return YES;
-    } else if (delta < -30.0) {  // Vorher -20.0 → Strengere Bedingung für "0"
+    } else if (delta < -30.0) {
         return NO;
     }
     
@@ -102,14 +99,14 @@
 - (cv::Mat)processImage:(cv::Mat)inputMat {
     cv::Mat grayMat;
     cv::Mat bgrMat;
-    cv::cvtColor(inputMat, bgrMat, cv::COLOR_RGBA2BGR);  // iOS RGBA → OpenCV BGR
-    cv::cvtColor(bgrMat, grayMat, cv::COLOR_BGR2GRAY);   // Umwandlung in Graustufen (wie in Python)
+    cv::cvtColor(inputMat, bgrMat, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(bgrMat, grayMat, cv::COLOR_BGR2GRAY);
     return grayMat;
 }
 
 - (double)calculateMeanMaxDiff:(cv::Mat)diff {
     cv::Mat blurred;
-    cv::GaussianBlur(diff, blurred, cv::Size(3, 3), 0);  // Rauschglättung
+    cv::GaussianBlur(diff, blurred, cv::Size(3, 3), 0);
     cv::Mat flat = blurred.reshape(1, 1);
     cv::Mat sorted;
     cv::sort(flat, sorted, cv::SORT_DESCENDING);
@@ -187,26 +184,21 @@
                            grayCurrent:(cv::Mat)grayCurrent
                               grayLast:(cv::Mat)grayLast
                                   diff:(cv::Mat)diff {
-    // Pfad zum Dokumentenverzeichnis
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths firstObject];
     
-    // Aktuelles Zeitstempel für Dateinamen
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"yyyyMMdd_HHmmssSSS"];
     NSString *timestamp = [formatter stringFromDate:[NSDate date]];
     
-    // Speichere Originalbilder
     [self saveImage:currentImage withName:[NSString stringWithFormat:@"current_%@.png", timestamp] inDirectory:documentsDirectory];
     [self saveImage:lastImage withName:[NSString stringWithFormat:@"last_%@.png", timestamp] inDirectory:documentsDirectory];
     
-    // Konvertiere und speichere Graustufenbilder
     UIImage *grayCurrentImage = [self UIImageFromCVMat:grayCurrent];
     UIImage *grayLastImage = [self UIImageFromCVMat:grayLast];
     [self saveImage:grayCurrentImage withName:[NSString stringWithFormat:@"gray_current_%@.png", timestamp] inDirectory:documentsDirectory];
     [self saveImage:grayLastImage withName:[NSString stringWithFormat:@"gray_last_%@.png", timestamp] inDirectory:documentsDirectory];
     
-    // Konvertiere und speichere Differenzbild (mit Normalisierung)
     cv::Mat diffNormalized;
     cv::normalize(diff, diffNormalized, 0, 255, cv::NORM_MINMAX, CV_8UC1);
     UIImage *diffImage = [self UIImageFromCVMat:diffNormalized];
